@@ -14,6 +14,7 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background-color: #111; color: #eee; font-family: sans-serif; overflow: hidden; }
     #viewer { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    /* Dark gradient that fades in when the controls are active. */
     .bottom-shade {
       position: absolute;
       left: 0;
@@ -119,7 +120,7 @@
     }
   </style>
 </head>
-<body>
+  <body>
   <div id="viewer">
     <img id="slideshow" src="" alt="Slideshow" loading="lazy">
     <video id="video" muted playsinline></video>
@@ -127,6 +128,7 @@
     <div id="caption"></div>
     <div id="folder"></div>
     <div id="bottomUi">
+      <!-- Bottom bar: media controls plus fit-mode toggle. -->
       <div id="controls">
         <button class="btn" onclick="prevImage()">◀</button>
         <button class="btn" onclick="togglePlay()" id="playBtn">⏸</button>
@@ -142,6 +144,7 @@
   </div>
 
   <script>
+    // State for the slideshow and fit-mode toggle.
     let images = [];
     let index = 0;
     let playing = true;
@@ -164,6 +167,7 @@
     const fitToggle = document.getElementById("fitToggle");
     const bottomShade = document.querySelector(".bottom-shade");
 
+    // Keep the overlay visible while either control group is hovered or tapped.
     function updateControlsHover() {
       viewer.classList.toggle("controls-hover", hoverSignalCount > 0 || touchSignalActive);
     }
@@ -182,6 +186,7 @@
     bindHoverSignal(controls);
     bindHoverSignal(fitToggle);
 
+    // Mobile shortcut: tap the gradient to toggle the same highlight state.
     bottomShade.addEventListener("click", () => {
       clearTimeout(touchSignalTimeout);
       touchSignalActive = !touchSignalActive;
@@ -200,6 +205,7 @@
       fitBtn.textContent = fitMode === "contain" ? "cover" : "contain";
     }
 
+    // Fade the current media while switching contain/cover.
     function transitionFitMode(nextMode) {
       if (fitMode === nextMode) return;
 
@@ -221,6 +227,7 @@
       }, 180);
     }
 
+    // Render the current media entry and update caption / folder metadata.
     function showImage() {
       if (images.length === 0) return;
       const current = images[index];

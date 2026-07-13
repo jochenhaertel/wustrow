@@ -4,6 +4,7 @@ function listMediaFiles($dir) {
     $allowedVideoExts = ['mp4', 'mov'];
     $media = [];
 
+    // Recursive scan so every media file inside images/ ends up in the slideshow.
     $rii = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
     foreach ($rii as $file) {
         if ($file->isDir()) continue;
@@ -25,6 +26,7 @@ function listMediaFiles($dir) {
             ];
 
             if ($type === 'image') {
+                // EXIF/IPTC is only useful for still images, not for video files.
                 $exif = @exif_read_data($file);
                 $iptc = @iptcparse($file->getPathname());
                 $keywords = [];
@@ -60,10 +62,12 @@ function listMediaFiles($dir) {
 
 $media = listMediaFiles(__DIR__ . '/images');
 
+// Keep the slideshow order deterministic across requests.
 usort($media, function($a, $b) {
     return strcmp($a['src'], $b['src']);
 });
 
+// Serve the media list as JSON for index.html.
 header('Content-Type: application/json');
 echo json_encode($media);
 ?>
