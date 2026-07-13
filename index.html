@@ -560,8 +560,8 @@
     function applyFitMode() {
       img.style.objectFit = fitMode;
       video.style.objectFit = fitMode;
-      const positionLabel = coverPosition === "center" ? "" : ` ${coverPosition}`;
-      fitBtn.textContent = fitMode === "contain" ? "cover" : `cover${positionLabel}`;
+      fitBtn.textContent = fitMode === "contain" ? "cover" : "contain";
+      fitBtn.title = fitMode === "contain" ? "Auf cover umschalten" : `Ausschnitt: ${coverPosition}`;
       img.style.objectPosition = fitMode === "cover" ? `${coverPosition} center` : "center center";
       video.style.objectPosition = fitMode === "cover" ? `${coverPosition} center` : "center center";
     }
