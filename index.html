@@ -94,12 +94,15 @@
       transform: translateX(-50%);
       min-width: min(92vw, 320px);
       max-width: 92vw;
+      max-height: calc(100vh - 7rem);
       padding: 0.5rem;
       background: rgba(0, 0, 0, 0.9);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 6px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
       display: none;
+      overflow-y: auto;
+      overscroll-behavior: contain;
       z-index: 4;
     }
     #folderPicker.open {
@@ -116,6 +119,57 @@
     }
     #folderPicker .folder-option.active {
       background-color: rgba(255, 255, 255, 0.22);
+    }
+    #helpModal {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 5;
+    }
+    #helpModal.open {
+      display: flex;
+    }
+    #helpPanel {
+      width: min(92vw, 420px);
+      max-height: min(80vh, 560px);
+      overflow-y: auto;
+      padding: 1rem 1.1rem;
+      background: rgba(0, 0, 0, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+      color: #eee;
+    }
+    #helpPanel h2 {
+      font-size: 1.1rem;
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+    }
+    #helpPanel ul {
+      padding-left: 1.25rem;
+      line-height: 1.45;
+    }
+    #helpPanel li + li {
+      margin-top: 0.45rem;
+    }
+    #helpCloseRow {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 0.9rem;
+    }
+    .circle-btn {
+      width: 2.05rem;
+      height: 2.05rem;
+      padding: 0;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
     }
     #bottomUi {
       position: absolute;
@@ -172,9 +226,25 @@
         <span id="imageIndex" style="align-self: center; font-size: 0.9rem; padding-right: 0.5rem;"></span>
         <button class="btn" onclick="skipNImages()">+N</button>
         <button class="btn" onclick="toggleCaption()">ⓘ</button>
+        <button class="btn circle-btn" id="helpBtn" aria-label="Bedienhilfe">?</button>
       </div>
       <div id="fitToggle">
         <button class="btn" onclick="toggleFitMode()" id="fitBtn">contain</button>
+      </div>
+    </div>
+  </div>
+  <div id="helpModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div id="helpPanel" role="document">
+      <h2>Bedienung</h2>
+      <ul>
+        <li>Oben auf den Ordnernamen klicken, um einen Bereich innerhalb von <code>images/</code> zu waehlen.</li>
+        <li>Mit den Pfeiltasten oder den unteren Buttons vor und zurueck blättern.</li>
+        <li><code>ⓘ</code> zeigt oder versteckt die Metadaten.</li>
+        <li><code>contain / cover</code> wechselt die Anzeigeanpassung des Mediums.</li>
+        <li>Auf Mobilgeraeten kann die untere Verlaufflaeche angetippt werden, um die Bedienelemente hervorzuheben.</li>
+      </ul>
+      <div id="helpCloseRow">
+        <button class="btn" onclick="toggleHelp()">Schliessen</button>
       </div>
     </div>
   </div>
@@ -195,15 +265,18 @@
     let touchSignalTimeout;
     let activeFolder = allParams.get("folder") || "";
     let folderPickerOpen = false;
+    let helpOpen = false;
 
     const img = document.getElementById("slideshow");
     const video = document.getElementById("video");
     const cap = document.getElementById("caption");
     const folderDiv = document.getElementById("folder");
     const folderPicker = document.getElementById("folderPicker");
+    const helpModal = document.getElementById("helpModal");
     const playBtn = document.getElementById("playBtn");
     const indexDisplay = document.getElementById("imageIndex");
     const fitBtn = document.getElementById("fitBtn");
+    const helpBtn = document.getElementById("helpBtn");
     const viewer = document.getElementById("viewer");
     const controls = document.getElementById("controls");
     const fitToggle = document.getElementById("fitToggle");
@@ -285,6 +358,16 @@
       folderPicker.setAttribute("aria-hidden", folderPickerOpen ? "false" : "true");
     }
 
+    function setHelpOpen(nextState) {
+      helpOpen = nextState;
+      helpModal.classList.toggle("open", helpOpen);
+      helpModal.setAttribute("aria-hidden", helpOpen ? "false" : "true");
+    }
+
+    function toggleHelp() {
+      setHelpOpen(!helpOpen);
+    }
+
     function setActiveFolder(nextFolder) {
       activeFolder = nextFolder;
       const params = new URLSearchParams(window.location.search);
@@ -323,6 +406,24 @@
 
     folderDiv.addEventListener("click", () => {
       setFolderPickerOpen(!folderPickerOpen);
+    });
+
+    helpBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      toggleHelp();
+    });
+
+    helpModal.addEventListener("click", (event) => {
+      if (event.target === helpModal) {
+        setHelpOpen(false);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        setHelpOpen(false);
+        setFolderPickerOpen(false);
+      }
     });
 
     document.addEventListener("click", (event) => {
