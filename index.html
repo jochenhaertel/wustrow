@@ -280,6 +280,7 @@
     </div>
   </div>
   <div id="helpModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <!-- Short overlay with usage hints for first-time visitors. -->
     <div id="helpPanel" role="document">
       <h2>Bedienung</h2>
       <ul>
@@ -296,6 +297,7 @@
     </div>
   </div>
   <div id="skipModal" aria-hidden="true" role="dialog" aria-modal="true">
+    <!-- Small modal for jumping forward by a custom number of images. -->
     <div id="skipPanel" role="document">
       <h2>Wie viele Bilder überspringen?</h2>
       <input id="skipInput" type="number" inputmode="numeric" min="1" step="1" placeholder="Zahl eingeben">
@@ -384,6 +386,7 @@
     }
 
     function updatePageTitle() {
+      // Keep tab title and bookmark label aligned with the active folder.
       document.title = activeFolder ? `Fotos ${activeFolder.replace(/\//g, " / ")}` : "Fotos";
     }
     updatePageTitle();
@@ -440,6 +443,7 @@
       skipModal.classList.toggle("open", skipOpen);
       skipModal.setAttribute("aria-hidden", skipOpen ? "false" : "true");
       if (skipOpen) {
+        // iPhone-friendly: focus immediately so the numeric keypad appears.
         setTimeout(() => skipInput.focus(), 0);
       }
     }
@@ -452,6 +456,7 @@
     function confirmSkip() {
       const n = parseInt(skipInput.value, 10);
       if (!Number.isFinite(n) || n <= 0) return;
+      // Wrap around so skipping works across the end of the slideshow.
       index = (index + n + images.length) % images.length;
       setSkipOpen(false);
       showImage();

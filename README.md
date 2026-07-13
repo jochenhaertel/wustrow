@@ -10,6 +10,8 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 - Fotos koennen EXIF-Daten fuer Datum und Schlagworte anzeigen
 - Ein Ordner kann direkt per URL-Parameter `?folder=...` angewählt werden
 - Der Ordnername oben ist klickbar und oeffnet eine kleine Auswahl
+- Der Seitentitel passt sich an den aktiven Ordner an
+- Der `+N`-Sprung nutzt auf Mobilgeraeten ein eigenes Eingabemodal statt `prompt()`
 
 ## Datei- und Ordnerstruktur
 
@@ -25,6 +27,7 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 - Die Datei `.htpasswd` ist ebenfalls ignoriert und wird nicht versioniert
 - Die Galerie laeuft direkt aus einem PHP-faehigen Webserver heraus
 - Ohne `folder`-Parameter startet die Galerie normal mit allen Medien
+- Bei gewähltem Ordner bleibt die URL synchron zum Seitentitel, damit Lesezeichen auf den aktiven Bereich zeigen
 
 ## Betrieb
 
@@ -32,6 +35,7 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 2. Bilder und Videos in `images/` ablegen
 3. `index.html` im Browser oeffnen
 4. Optional einen Ordner ueber `?folder=2025` oder einen Klick auf den Titel waehlen
+5. Mit `+N` auf Desktop oder Mobilgeraet eine beliebige Anzahl von Bildern überspringen
 
 ## GitHub
 
