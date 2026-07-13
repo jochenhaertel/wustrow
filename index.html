@@ -288,7 +288,7 @@
         <li>Mit den Pfeiltasten oder den unteren Buttons vor und zurueck blättern.</li>
         <li><code>+N</code> springt um eine frei eingegebene Anzahl von Bildern weiter.</li>
         <li><code>ⓘ</code> zeigt oder versteckt die Metadaten.</li>
-        <li><code>contain / cover</code> wechselt die Anzeigeanpassung des Mediums.</li>
+        <li><code>contain / cover</code> wechselt die Anzeigeanpassung des Mediums. Im <code>cover</code>-Modus schaltet jeder Klick zwischen links, Mitte und rechts.</li>
         <li>Auf Mobilgeraeten kann die untere Verlaufflaeche angetippt werden, um die Bedienelemente hervorzuheben.</li>
       </ul>
       <div id="helpCloseRow">
@@ -317,6 +317,8 @@
     let index = 0;
     let playing = true;
     let fitMode = "contain";
+    let coverPosition = "center";
+    const coverPositions = ["left", "center", "right"];
     let intervalId;
     let fitTransitionTimeout;
     let hoverSignalCount = 0;
@@ -558,7 +560,10 @@
     function applyFitMode() {
       img.style.objectFit = fitMode;
       video.style.objectFit = fitMode;
-      fitBtn.textContent = fitMode === "contain" ? "cover" : "contain";
+      const positionLabel = coverPosition === "center" ? "" : ` ${coverPosition}`;
+      fitBtn.textContent = fitMode === "contain" ? "cover" : `cover${positionLabel}`;
+      img.style.objectPosition = fitMode === "cover" ? `${coverPosition} center` : "center center";
+      video.style.objectPosition = fitMode === "cover" ? `${coverPosition} center` : "center center";
     }
 
     // Fade the current media while switching contain/cover.
@@ -629,7 +634,14 @@
     }
 
     function toggleFitMode() {
-      transitionFitMode(fitMode === "contain" ? "cover" : "contain");
+      if (fitMode === "contain") {
+        transitionFitMode("cover");
+        return;
+      }
+
+      const currentIndex = coverPositions.indexOf(coverPosition);
+      coverPosition = coverPositions[(currentIndex + 1) % coverPositions.length];
+      applyFitMode();
     }
 
     function nextImage() {

@@ -12,6 +12,7 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 - Der Ordnername oben ist klickbar und oeffnet eine kleine Auswahl
 - Der Seitentitel passt sich an den aktiven Ordner an
 - Der `+N`-Sprung nutzt auf Mobilgeraeten ein eigenes Eingabemodal statt `prompt()`
+- Im `cover`-Modus schaltet der Fit-Button zwischen linkem, mittlerem und rechtem Ausschnitt um
 
 ## Datei- und Ordnerstruktur
 
@@ -28,6 +29,7 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 - Die Galerie laeuft direkt aus einem PHP-faehigen Webserver heraus
 - Ohne `folder`-Parameter startet die Galerie normal mit allen Medien
 - Bei gewähltem Ordner bleibt die URL synchron zum Seitentitel, damit Lesezeichen auf den aktiven Bereich zeigen
+- Der `cover`-Modus ist nur fuer Bilder und Videos als schneller Ausschnittwechsel gedacht, nicht fuer freies Panning
 
 ## Betrieb
 
