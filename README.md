@@ -8,6 +8,8 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 - `generate.php` scannt den Ordner `images/` rekursiv
 - Bilder und Videos werden als JSON an den Browser geliefert
 - Fotos koennen EXIF-Daten fuer Datum und Schlagworte anzeigen
+- Ein Ordner kann direkt per URL-Parameter `?folder=...` angewählt werden
+- Der Ordnername oben ist klickbar und oeffnet eine kleine Auswahl
 
 ## Datei- und Ordnerstruktur
 
@@ -22,12 +24,14 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 - Der Ordner `images/` ist in `.gitignore`, damit keine Bilddateien im Repository landen
 - Die Datei `.htpasswd` ist ebenfalls ignoriert und wird nicht versioniert
 - Die Galerie laeuft direkt aus einem PHP-faehigen Webserver heraus
+- Ohne `folder`-Parameter startet die Galerie normal mit allen Medien
 
 ## Betrieb
 
 1. Projektverzeichnis auf einen PHP-Webserver legen
 2. Bilder und Videos in `images/` ablegen
 3. `index.html` im Browser oeffnen
+4. Optional einen Ordner ueber `?folder=2025` oder einen Klick auf den Titel waehlen
 
 ## GitHub
 

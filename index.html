@@ -75,12 +75,47 @@
     #folder {
       position: absolute;
       top: 20px;
-      width: 100%;
+      left: 1rem;
+      right: 1rem;
+      width: auto;
+      padding: 0 1rem;
       text-align: center;
       font-size: 2rem;
       color: #fff;
       text-shadow: 0 0 4px #00000044;
-      pointer-events: none;
+      pointer-events: auto;
+      cursor: pointer;
+      z-index: 3;
+    }
+    #folderPicker {
+      position: absolute;
+      top: 5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: min(92vw, 320px);
+      max-width: 92vw;
+      padding: 0.5rem;
+      background: rgba(0, 0, 0, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      display: none;
+      z-index: 4;
+    }
+    #folderPicker.open {
+      display: block;
+    }
+    #folderPicker button {
+      width: 100%;
+      text-align: left;
+      margin: 0.15rem 0;
+      display: block;
+    }
+    #folderPicker .folder-option {
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+    #folderPicker .folder-option.active {
+      background-color: rgba(255, 255, 255, 0.22);
     }
     #bottomUi {
       position: absolute;
@@ -127,6 +162,7 @@
     <div class="bottom-shade" aria-hidden="true"></div>
     <div id="caption"></div>
     <div id="folder"></div>
+    <div id="folderPicker" aria-hidden="true"></div>
     <div id="bottomUi">
       <!-- Bottom bar: media controls plus fit-mode toggle. -->
       <div id="controls">
@@ -145,7 +181,10 @@
 
   <script>
     // State for the slideshow and fit-mode toggle.
+    const allParams = new URLSearchParams(window.location.search);
     let images = [];
+    let allImages = [];
+    let folderChoices = [];
     let index = 0;
     let playing = true;
     let fitMode = "contain";
@@ -154,11 +193,14 @@
     let hoverSignalCount = 0;
     let touchSignalActive = false;
     let touchSignalTimeout;
+    let activeFolder = allParams.get("folder") || "";
+    let folderPickerOpen = false;
 
     const img = document.getElementById("slideshow");
     const video = document.getElementById("video");
     const cap = document.getElementById("caption");
     const folderDiv = document.getElementById("folder");
+    const folderPicker = document.getElementById("folderPicker");
     const playBtn = document.getElementById("playBtn");
     const indexDisplay = document.getElementById("imageIndex");
     const fitBtn = document.getElementById("fitBtn");
@@ -166,6 +208,99 @@
     const controls = document.getElementById("controls");
     const fitToggle = document.getElementById("fitToggle");
     const bottomShade = document.querySelector(".bottom-shade");
+
+    function folderFromSrc(src) {
+      const relative = src.replace(/^images\//, "");
+      const slashIndex = relative.lastIndexOf("/");
+      return slashIndex >= 0 ? relative.slice(0, slashIndex) : "";
+    }
+
+    function createLabeledRow(text, size) {
+      const row = document.createElement("div");
+      row.style.fontSize = size;
+      row.style.color = "#fff";
+      row.style.textShadow = "0 0 4px #00000044";
+      row.textContent = text;
+      return row;
+    }
+
+    function collectFolderChoices(media) {
+      const folders = new Set();
+
+      media.forEach((entry) => {
+        const relative = entry.src.replace(/^images\//, "");
+        const parts = relative.split("/");
+        parts.pop();
+
+        let current = "";
+        parts.forEach((part) => {
+          current = current ? `${current}/${part}` : part;
+          folders.add(current);
+        });
+      });
+
+      return Array.from(folders).sort((a, b) => a.localeCompare(b, "de"));
+    }
+
+    function applyFolderFilter(media) {
+      if (!activeFolder) return media;
+      const prefix = `images/${activeFolder}/`;
+      return media.filter((entry) => entry.src.startsWith(prefix));
+    }
+
+    function updateFolderLabel() {
+      folderDiv.replaceChildren();
+      const currentFolder = images[index] ? folderFromSrc(images[index].src) : "";
+      const title = activeFolder || currentFolder || "Alle Bilder";
+      const subtitle = images[index] && images[index].type === "image" && images[index].exif ? (images[index].exif.datetime || "") : "";
+
+      folderDiv.appendChild(createLabeledRow(title, "1rem"));
+      if (subtitle) {
+        folderDiv.appendChild(createLabeledRow(subtitle, "0.75rem"));
+      }
+    }
+
+    function renderFolderPicker() {
+      folderPicker.replaceChildren();
+
+      const addOption = (label, value) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `btn folder-option ${value === activeFolder ? "active" : ""}`;
+        button.textContent = label;
+        button.dataset.folder = value;
+        button.addEventListener("click", () => {
+          setActiveFolder(button.dataset.folder || "");
+        });
+        folderPicker.appendChild(button);
+      };
+
+      addOption("Alle Bilder", "");
+      folderChoices.forEach((folder) => addOption(folder, folder));
+    }
+
+    function setFolderPickerOpen(nextState) {
+      folderPickerOpen = nextState;
+      folderPicker.classList.toggle("open", folderPickerOpen);
+      folderPicker.setAttribute("aria-hidden", folderPickerOpen ? "false" : "true");
+    }
+
+    function setActiveFolder(nextFolder) {
+      activeFolder = nextFolder;
+      const params = new URLSearchParams(window.location.search);
+      if (activeFolder) {
+        params.set("folder", activeFolder);
+      } else {
+        params.delete("folder");
+      }
+
+      history.replaceState({}, "", `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`);
+      images = applyFolderFilter(allImages);
+      index = 0;
+      renderFolderPicker();
+      setFolderPickerOpen(false);
+      showImage();
+    }
 
     // Keep the overlay visible while either control group is hovered or tapped.
     function updateControlsHover() {
@@ -185,6 +320,16 @@
 
     bindHoverSignal(controls);
     bindHoverSignal(fitToggle);
+
+    folderDiv.addEventListener("click", () => {
+      setFolderPickerOpen(!folderPickerOpen);
+    });
+
+    document.addEventListener("click", (event) => {
+      if (!folderPickerOpen) return;
+      if (folderPicker.contains(event.target) || folderDiv.contains(event.target)) return;
+      setFolderPickerOpen(false);
+    });
 
     // Mobile shortcut: tap the gradient to toggle the same highlight state.
     bottomShade.addEventListener("click", () => {
@@ -229,7 +374,13 @@
 
     // Render the current media entry and update caption / folder metadata.
     function showImage() {
-      if (images.length === 0) return;
+      if (images.length === 0) {
+        folderDiv.replaceChildren();
+        folderDiv.appendChild(createLabeledRow(activeFolder || "Kein Inhalt", "1rem"));
+        indexDisplay.textContent = "0 / 0";
+        cap.innerHTML = "";
+        return;
+      }
       const current = images[index];
       applyFitMode();
 
@@ -261,8 +412,7 @@
 
       cap.innerHTML = `<strong>${current.caption}</strong><br>${exifText}`;
 
-      const folderMatch = current.src.match(/images\/?([^\/]+)\//);
-      folderDiv.innerHTML = folderMatch ? `<div style="font-size: 1rem; color: #fff; text-shadow: 0 0 4px #00000044;">${folderMatch[1]}</div><div style="font-size: 0.75rem; color: #fff; text-shadow: 0 0 4px #00000044;">${exif.datetime || ''}</div>` : "";
+      updateFolderLabel();
 
       indexDisplay.textContent = `${index + 1} / ${images.length}`;
     }
@@ -323,7 +473,10 @@
     fetch("generate.php")
       .then(res => res.json())
       .then(data => {
-        images = data;
+        allImages = data;
+        folderChoices = collectFolderChoices(allImages);
+        images = applyFolderFilter(allImages);
+        renderFolderPicker();
         showImage();
       });
   </script>
