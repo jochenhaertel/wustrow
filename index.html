@@ -1,0 +1,324 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#000000">
+  <meta charset="UTF-8">
+  <title>Fotos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background-color: #111; color: #eee; font-family: sans-serif; overflow: hidden; }
+    #viewer { position: relative; width: 100vw; height: 100vh; display: flex; justify-content: center; align-items: center; }
+    .bottom-shade {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: min(38vh, 420px);
+      background: linear-gradient(to top, rgba(0, 0, 0, 0.88) 0%, rgba(0, 0, 0, 0.72) 24%, rgba(0, 0, 0, 0.35) 58%, rgba(0, 0, 0, 0) 100%);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      z-index: 1;
+    }
+    @media (hover: none) and (pointer: coarse) {
+      .bottom-shade {
+        pointer-events: auto;
+        cursor: pointer;
+      }
+    }
+    #viewer.controls-hover .bottom-shade {
+      opacity: 1;
+    }
+    #viewer.controls-hover #controls,
+    #viewer.controls-hover #fitToggle {
+      opacity: 1;
+    }
+    img, video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+      background: black;
+      object-fit: contain;
+      object-position: center;
+      opacity: 1;
+    }
+    video { display: none; }
+    .media-transitioning {
+      transform: scale(0.99);
+    }
+    .media-fade-out {
+      opacity: 0;
+    }
+    #caption {
+      display: none;
+      position: absolute;
+      right: 1rem;
+      bottom: 3.75rem;
+      background-color: rgba(0, 0, 0, 0.8);
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      color: #eee;
+      border-radius: 4px;
+      text-align: right;
+      max-width: 40vw;
+    }
+    #folder {
+      position: absolute;
+      top: 20px;
+      width: 100%;
+      text-align: center;
+      font-size: 2rem;
+      color: #fff;
+      text-shadow: 0 0 4px #00000044;
+      pointer-events: none;
+    }
+    #bottomUi {
+      position: absolute;
+      left: 1rem;
+      right: 1rem;
+      bottom: 1rem;
+      display: flex;
+      flex-wrap: wrap-reverse;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 0.5rem;
+      z-index: 2;
+    }
+    #controls {
+      display: flex;
+      gap: 0.5rem;
+      opacity: 0.3;
+    }
+    #controls:hover {
+      opacity: 1;
+    }
+    .btn {
+      background-color: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      border: none;
+      padding: 0.5rem 0.8rem;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    #fitToggle {
+      opacity: 0.3;
+      margin-left: auto;
+    }
+    #fitToggle:hover {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewer">
+    <img id="slideshow" src="" alt="Slideshow" loading="lazy">
+    <video id="video" muted playsinline></video>
+    <div class="bottom-shade" aria-hidden="true"></div>
+    <div id="caption"></div>
+    <div id="folder"></div>
+    <div id="bottomUi">
+      <div id="controls">
+        <button class="btn" onclick="prevImage()">◀</button>
+        <button class="btn" onclick="togglePlay()" id="playBtn">⏸</button>
+        <button class="btn" onclick="nextImage()">▶</button>
+        <span id="imageIndex" style="align-self: center; font-size: 0.9rem; padding-right: 0.5rem;"></span>
+        <button class="btn" onclick="skipNImages()">+N</button>
+        <button class="btn" onclick="toggleCaption()">ⓘ</button>
+      </div>
+      <div id="fitToggle">
+        <button class="btn" onclick="toggleFitMode()" id="fitBtn">contain</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let images = [];
+    let index = 0;
+    let playing = true;
+    let fitMode = "contain";
+    let intervalId;
+    let fitTransitionTimeout;
+    let hoverSignalCount = 0;
+    let touchSignalActive = false;
+    let touchSignalTimeout;
+
+    const img = document.getElementById("slideshow");
+    const video = document.getElementById("video");
+    const cap = document.getElementById("caption");
+    const folderDiv = document.getElementById("folder");
+    const playBtn = document.getElementById("playBtn");
+    const indexDisplay = document.getElementById("imageIndex");
+    const fitBtn = document.getElementById("fitBtn");
+    const viewer = document.getElementById("viewer");
+    const controls = document.getElementById("controls");
+    const fitToggle = document.getElementById("fitToggle");
+    const bottomShade = document.querySelector(".bottom-shade");
+
+    function updateControlsHover() {
+      viewer.classList.toggle("controls-hover", hoverSignalCount > 0 || touchSignalActive);
+    }
+
+    function bindHoverSignal(el) {
+      el.addEventListener("mouseenter", () => {
+        hoverSignalCount += 1;
+        updateControlsHover();
+      });
+      el.addEventListener("mouseleave", () => {
+        hoverSignalCount = Math.max(0, hoverSignalCount - 1);
+        updateControlsHover();
+      });
+    }
+
+    bindHoverSignal(controls);
+    bindHoverSignal(fitToggle);
+
+    bottomShade.addEventListener("click", () => {
+      clearTimeout(touchSignalTimeout);
+      touchSignalActive = !touchSignalActive;
+      updateControlsHover();
+      if (touchSignalActive) {
+        touchSignalTimeout = setTimeout(() => {
+          touchSignalActive = false;
+          updateControlsHover();
+        }, 2500);
+      }
+    });
+
+    function applyFitMode() {
+      img.style.objectFit = fitMode;
+      video.style.objectFit = fitMode;
+      fitBtn.textContent = fitMode === "contain" ? "cover" : "contain";
+    }
+
+    function transitionFitMode(nextMode) {
+      if (fitMode === nextMode) return;
+
+      const activeMedia = video.style.display === "block" ? video : img;
+      const inactiveMedia = activeMedia === img ? video : img;
+
+      clearTimeout(fitTransitionTimeout);
+      activeMedia.classList.add("media-transitioning", "media-fade-out");
+      inactiveMedia.classList.add("media-transitioning");
+
+      fitTransitionTimeout = setTimeout(() => {
+        fitMode = nextMode;
+        applyFitMode();
+        activeMedia.classList.remove("media-fade-out");
+        requestAnimationFrame(() => {
+          activeMedia.classList.remove("media-transitioning");
+          inactiveMedia.classList.remove("media-transitioning");
+        });
+      }, 180);
+    }
+
+    function showImage() {
+      if (images.length === 0) return;
+      const current = images[index];
+      applyFitMode();
+
+      if (current.type === "video") {
+        clearInterval(intervalId);
+        img.style.display = "none";
+        video.src = current.src;
+        video.style.display = "block";
+        video.play().catch(() => {});
+        video.onended = () => nextImage();
+      } else {
+        video.pause();
+        video.style.display = "none";
+        img.src = current.src;
+        img.style.display = "block";
+
+        if (playing) {
+          clearInterval(intervalId);
+          intervalId = setInterval(nextImage, 5000);
+        }
+      }
+
+      const exif = current.exif || {};
+      console.log('EXIF for', current.caption, exif);
+      const exifText = [
+        exif.datetime || "",
+        exif.keywords ? "Stichworte: " + exif.keywords.join(", ") : ""
+      ].filter(Boolean).join("<br>");
+
+      cap.innerHTML = `<strong>${current.caption}</strong><br>${exifText}`;
+
+      const folderMatch = current.src.match(/images\/?([^\/]+)\//);
+      folderDiv.innerHTML = folderMatch ? `<div style="font-size: 1rem; color: #fff; text-shadow: 0 0 4px #00000044;">${folderMatch[1]}</div><div style="font-size: 0.75rem; color: #fff; text-shadow: 0 0 4px #00000044;">${exif.datetime || ''}</div>` : "";
+
+      indexDisplay.textContent = `${index + 1} / ${images.length}`;
+    }
+
+    function toggleFitMode() {
+      transitionFitMode(fitMode === "contain" ? "cover" : "contain");
+    }
+
+    function nextImage() {
+      index = (index + 1) % images.length;
+      showImage();
+    }
+
+    function prevImage() {
+      index = (index - 1 + images.length) % images.length;
+      showImage();
+    }
+
+    function togglePlay() {
+      playing = !playing;
+      playBtn.textContent = playing ? "⏸" : "▶";
+      if (playing) {
+        intervalId = setInterval(nextImage, 5000);
+      } else {
+        clearInterval(intervalId);
+        video.pause();
+      }
+    }
+
+    
+    function toggleCaption() {
+      const box = document.getElementById("caption");
+      box.style.display = box.style.display === "none" ? "block" : "none";
+    }
+
+    function skipNImages() {
+      const n = parseInt(prompt("Wie viele Bilder möchtest du überspringen?"), 10);
+      if (!isNaN(n)) {
+        index = (index + n + images.length) % images.length;
+        showImage();
+      }
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.target && ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName)) return;
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        prevImage();
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        nextImage();
+      } else if (event.key.toLowerCase() === "c") {
+        event.preventDefault();
+        toggleFitMode();
+      }
+    });
+
+    fetch("generate.php")
+      .then(res => res.json())
+      .then(data => {
+        images = data;
+        showImage();
+      });
+  </script>
+</body>
+</html>
