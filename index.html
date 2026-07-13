@@ -288,7 +288,7 @@
         <li>Mit den Pfeiltasten oder den unteren Buttons vor und zurueck blättern.</li>
         <li><code>+N</code> springt um eine frei eingegebene Anzahl von Bildern weiter.</li>
         <li><code>ⓘ</code> zeigt oder versteckt die Metadaten.</li>
-        <li><code>contain / cover</code> wechselt die Anzeigeanpassung des Mediums. Im <code>cover</code>-Modus schaltet jeder Klick zwischen links, Mitte und rechts.</li>
+        <li><code>contain / cover</code> wechselt die Anzeigeanpassung des Mediums. Im <code>cover</code>-Modus schaltet ein Tap auf das Bild zwischen links, Mitte und rechts.</li>
         <li>Auf Mobilgeraeten kann die untere Verlaufflaeche angetippt werden, um die Bedienelemente hervorzuheben.</li>
       </ul>
       <div id="helpCloseRow">
@@ -561,7 +561,7 @@
       img.style.objectFit = fitMode;
       video.style.objectFit = fitMode;
       fitBtn.textContent = fitMode === "contain" ? "cover" : "contain";
-      fitBtn.title = fitMode === "contain" ? "Auf cover umschalten" : `Ausschnitt: ${coverPosition}`;
+      fitBtn.title = fitMode === "contain" ? "Auf cover umschalten" : "Zurueck zu contain";
       img.style.objectPosition = fitMode === "cover" ? `${coverPosition} center` : "center center";
       video.style.objectPosition = fitMode === "cover" ? `${coverPosition} center` : "center center";
     }
@@ -634,15 +634,18 @@
     }
 
     function toggleFitMode() {
-      if (fitMode === "contain") {
-        transitionFitMode("cover");
-        return;
-      }
+      transitionFitMode(fitMode === "contain" ? "cover" : "contain");
+    }
 
+    function cycleCoverPosition() {
+      if (fitMode !== "cover") return;
       const currentIndex = coverPositions.indexOf(coverPosition);
       coverPosition = coverPositions[(currentIndex + 1) % coverPositions.length];
       applyFitMode();
     }
+
+    img.addEventListener("click", cycleCoverPosition);
+    video.addEventListener("click", cycleCoverPosition);
 
     function nextImage() {
       index = (index + 1) % images.length;

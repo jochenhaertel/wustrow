@@ -12,7 +12,7 @@ Eine kleine PHP/HTML-Galerie fuer Fotos und Videos.
 - Der Ordnername oben ist klickbar und oeffnet eine kleine Auswahl
 - Der Seitentitel passt sich an den aktiven Ordner an
 - Der `+N`-Sprung nutzt auf Mobilgeraeten ein eigenes Eingabemodal statt `prompt()`
-- Im `cover`-Modus schaltet der Fit-Button zwischen linkem, mittlerem und rechtem Ausschnitt um
+- Im `cover`-Modus schaltet ein Tap auf das Bild zwischen linkem, mittlerem und rechtem Ausschnitt um
 
 ## Datei- und Ordnerstruktur
 
