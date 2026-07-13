@@ -162,8 +162,8 @@
       margin-top: 0.9rem;
     }
     .circle-btn {
-      width: 2.05rem;
-      height: 2.05rem;
+      width: 2.85rem;
+      height: 2.85rem;
       padding: 0;
       border-radius: 999px;
       display: inline-flex;
@@ -220,13 +220,13 @@
     <div id="bottomUi">
       <!-- Bottom bar: media controls plus fit-mode toggle. -->
       <div id="controls">
+        <button class="btn circle-btn" id="helpBtn" aria-label="Bedienhilfe">?</button>
         <button class="btn" onclick="prevImage()">◀</button>
         <button class="btn" onclick="togglePlay()" id="playBtn">⏸</button>
         <button class="btn" onclick="nextImage()">▶</button>
         <span id="imageIndex" style="align-self: center; font-size: 0.9rem; padding-right: 0.5rem;"></span>
         <button class="btn" onclick="skipNImages()">+N</button>
         <button class="btn" onclick="toggleCaption()">ⓘ</button>
-        <button class="btn circle-btn" id="helpBtn" aria-label="Bedienhilfe">?</button>
       </div>
       <div id="fitToggle">
         <button class="btn" onclick="toggleFitMode()" id="fitBtn">contain</button>
@@ -239,6 +239,7 @@
       <ul>
         <li>Oben auf den Ordnernamen klicken, um einen Bereich innerhalb von <code>images/</code> zu waehlen.</li>
         <li>Mit den Pfeiltasten oder den unteren Buttons vor und zurueck blättern.</li>
+        <li><code>+N</code> springt um eine frei eingegebene Anzahl von Bildern weiter.</li>
         <li><code>ⓘ</code> zeigt oder versteckt die Metadaten.</li>
         <li><code>contain / cover</code> wechselt die Anzeigeanpassung des Mediums.</li>
         <li>Auf Mobilgeraeten kann die untere Verlaufflaeche angetippt werden, um die Bedienelemente hervorzuheben.</li>
@@ -321,6 +322,11 @@
       return media.filter((entry) => entry.src.startsWith(prefix));
     }
 
+    function updatePageTitle() {
+      document.title = activeFolder ? `Fotos ${activeFolder.replace(/\//g, " / ")}` : "Fotos";
+    }
+    updatePageTitle();
+
     function updateFolderLabel() {
       folderDiv.replaceChildren();
       const currentFolder = images[index] ? folderFromSrc(images[index].src) : "";
@@ -370,6 +376,7 @@
 
     function setActiveFolder(nextFolder) {
       activeFolder = nextFolder;
+      updatePageTitle();
       const params = new URLSearchParams(window.location.search);
       if (activeFolder) {
         params.set("folder", activeFolder);
@@ -577,6 +584,7 @@
         allImages = data;
         folderChoices = collectFolderChoices(allImages);
         images = applyFolderFilter(allImages);
+        updatePageTitle();
         renderFolderPicker();
         showImage();
       });
